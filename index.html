@@ -198,6 +198,17 @@
             if (firstNonZero === undefined) return v; // Vetor nulo
             return v.map(val => val / firstNonZero);
         }
+        // CÓDIGO NOVO E CORRIGIDO
+
+function formatNumber(num) {
+    const tolerance = 1e-9; // Uma pequena tolerância para erros de ponto flutuante
+    // Se o número for muito próximo de um inteiro...
+    if (Math.abs(num - Math.round(num)) < tolerance) {
+        return Math.round(num).toString(); // ...mostre-o como um inteiro (ex: "3")
+    }
+    // Caso contrário, mostre-o como um decimal com 4 casas.
+    return num.toFixed(4);
+}
         
         function renderFormula(element, formula) {
             try { katex.render(formula, element, { throwOnError: false, displayMode: true }); }
@@ -222,25 +233,49 @@
             renderFormula(document.getElementById('poly2x2'), `\\lambda^2 ${trSign} ${trVal}\\lambda ${detSign} ${detVal} = 0`);
             const discriminant = trace * trace - 4 * det;
             if (discriminant < 0) { eigenvaluesSection.innerHTML = `<p>Cálculo resultou em autovalores complexos.</p>`; return; }
-            
-            eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3>`;
-            const sqrtDiscriminant = Math.sqrt(discriminant);
-            const lambda1 = (trace + sqrtDiscriminant) / 2;
-            const lambda2 = (trace - sqrtDiscriminant) / 2;
-            const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
-            const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
-            renderFormula(container1, `\\lambda_1 = ${lambda1.toFixed(4)}`);
-            renderFormula(container2, `\\lambda_2 = ${lambda2.toFixed(4)}`);
-            
-            let v1 = [b, lambda1 - a]; if (b === 0 && (lambda1 - a) === 0) v1 = [lambda1 - d, c];
-            let v2 = [b, lambda2 - a]; if (v2[0] === 0 && (lambda2 - a) === 0) v2 = [lambda2 - d, c];
-            const simpV1 = simplifyVector(v1);
-            const simpV2 = simplifyVector(v2);
-            eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec1_text"></div><div id="eigvec1_math"></div></div><div class="eigen-pair"><div id="eigvec2_text"></div><div id="eigvec2_math"></div></div>`;
-            renderFormula(document.getElementById('eigvec1_text'), `\\text{Para } \\lambda_1:`);
-            renderFormula(document.getElementById('eigvec1_math'), `v_1 = t \\cdot \\begin{pmatrix} ${simpV1[0].toFixed(2)} \\\\ ${simpV1[1].toFixed(2)} \\end{pmatrix}`);
-            renderFormula(document.getElementById('eigvec2_text'), `\\text{Para } \\lambda_2:`);
-            renderFormula(document.getElementById('eigvec2_math'), `v_2 = t \\cdot \\begin{pmatrix} ${simpV2[0].toFixed(2)} \\\\ ${simpV2[1].toFixed(2)} \\end{pmatrix}`);
+
+            // COLE ESTE NOVO BLOCO DE CÓDIGO NO LUGAR DO ANTIGO:
+eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3>`;
+const discriminantContainer = document.createElement('div');
+discriminantContainer.className = 'formula-container';
+eigenvaluesSection.appendChild(discriminantContainer);
+renderFormula(discriminantContainer, `\\lambda = \\frac{${trace} \\pm \\sqrt{${discriminant}}}{2}`);
+
+if (discriminant < 0) {
+    const realPart = trace / 2; const imagPart = Math.sqrt(-discriminant) / 2;
+    const container = document.createElement('div'); container.className = 'formula-container'; eigenvaluesSection.appendChild(container);
+    renderFormula(container, `\\lambda = ${formatNumber(realPart)} \\pm ${formatNumber(imagPart)}i`);
+    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>Autovetores para autovalores complexos não são calculados.</p>`;
+} else {
+    const sqrtDiscriminant = Math.sqrt(discriminant);
+    const lambda1 = (trace + sqrtDiscriminant) / 2;
+    const lambda2 = (trace - sqrtDiscriminant) / 2;
+
+    if (sqrtDiscriminant % 1 !== 0) { // Mostrar passo da simplificação apenas se não for raiz exata
+        const simpRad = simplifyRadical(discriminant);
+        if (simpRad && (simpRad.coef !== 1 || simpRad.rad !== discriminant)) {
+            const simpContainer = document.createElement('div');
+            simpContainer.className = 'formula-container';
+            eigenvaluesSection.appendChild(simpContainer);
+            renderFormula(simpContainer, `\\lambda = \\frac{${trace} \\pm ${simpRad.coef === 1 ? '' : simpRad.coef}\\sqrt{${simpRad.rad}}}{2}`);
+        }
+    }
+    
+    const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
+    const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
+    renderFormula(container1, `\\lambda_1 = ${formatNumber(lambda1)}`);
+    renderFormula(container2, `\\lambda_2 = ${formatNumber(lambda2)}`);
+    
+    let v1 = [b, lambda1 - a]; if (b === 0 && (lambda1 - a) === 0) v1 = [lambda1 - d, c];
+    let v2 = [b, lambda2 - a]; if (v2[0] === 0 && (lambda2 - a) === 0) v2 = [lambda2 - d, c];
+    const simpV1 = simplifyVector(v1); const simpV2 = simplifyVector(v2);
+    
+    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec1_text"></div><div id="eigvec1_math"></div></div><div class="eigen-pair"><div id="eigvec2_text"></div><div id="eigvec2_math"></div></div>`;
+    renderFormula(document.getElementById('eigvec1_text'), `\\text{Para } \\lambda_1:`);
+    renderFormula(document.getElementById('eigvec1_math'), `v_1 = t \\cdot \\begin{pmatrix} ${formatNumber(simpV1[0])} \\\\ ${formatNumber(simpV1[1])} \\end{pmatrix}`);
+    renderFormula(document.getElementById('eigvec2_text'), `\\text{Para } \\lambda_2:`);
+    renderFormula(document.getElementById('eigvec2_math'), `v_2 = t \\cdot \\begin{pmatrix} ${formatNumber(simpV2[0])} \\\\ ${formatNumber(simpV2[1])} \\end{pmatrix}`);
+     }
         }
 
         function calculate3x3(elements) {
@@ -273,9 +308,9 @@
             const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
             const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
             const container3 = document.createElement('div'); container3.className = 'formula-container'; eigenvaluesSection.appendChild(container3);
-            renderFormula(container1, `\\lambda_1 = ${lambda1.toFixed(4)}`);
-            renderFormula(container2, `\\lambda_2 = ${lambda2.toFixed(4)}`);
-            renderFormula(container3, `\\lambda_3 = ${lambda3.toFixed(4)}`);
+            renderFormula(container1, `\\lambda_1 = ${formatNumber(lambda1)}`);
+            renderFormula(container2, `\\lambda_2 = ${formatNumber(lambda2)}`);
+            renderFormula(container3, `\\lambda_3 = ${formatNumber(lambda3)}`);
             
             const tolerance = 1e-9;
             if (Math.abs(lambda1 - lambda2) < tolerance || Math.abs(lambda1 - lambda3) < tolerance || Math.abs(lambda2 - lambda3) < tolerance) {
@@ -287,11 +322,9 @@
                 const v3 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda3);
                 eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec31_text"></div><div id="eigvec31_math"></div></div><div class="eigen-pair"><div id="eigvec32_text"></div><div id="eigvec32_math"></div></div><div class="eigen-pair"><div id="eigvec33_text"></div><div id="eigvec33_math"></div></div>`;
                 renderFormula(document.getElementById('eigvec31_text'), `\\text{Para } \\lambda_1:`);
-                renderFormula(document.getElementById('eigvec31_math'), `v_1 = t \\cdot \\begin{pmatrix} ${v1[0].toFixed(2)} \\\\ ${v1[1].toFixed(2)} \\\\ ${v1[2].toFixed(2)} \\end{pmatrix}`);
-                renderFormula(document.getElementById('eigvec32_text'), `\\text{Para } \\lambda_2:`);
-                renderFormula(document.getElementById('eigvec32_math'), `v_2 = t \\cdot \\begin{pmatrix} ${v2[0].toFixed(2)} \\\\ ${v2[1].toFixed(2)} \\\\ ${v2[2].toFixed(2)} \\end{pmatrix}`);
-                renderFormula(document.getElementById('eigvec33_text'), `\\text{Para } \\lambda_3:`);
-                renderFormula(document.getElementById('eigvec33_math'), `v_3 = t \\cdot \\begin{pmatrix} ${v3[0].toFixed(2)} \\\\ ${v3[1].toFixed(2)} \\\\ ${v3[2].toFixed(2)} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec31_math'), `v_1 = t \\cdot \\begin{pmatrix} ${formatNumber(v1[0])} \\\\ ${formatNumber(v1[1])} \\\\ ${formatNumber(v1[2])} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec32_math'), `v_2 = t \\cdot \\begin{pmatrix} ${formatNumber(v2[0])} \\\\ ${formatNumber(v2[1])} \\\\ ${formatNumber(v2[2])} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec33_math'), `v_3 = t \\cdot \\begin{pmatrix} ${formatNumber(v3[0])} \\\\ ${formatNumber(v3[1])} \\\\ ${formatNumber(v3[2])} \\end{pmatrix}`);
             }
         }
         
