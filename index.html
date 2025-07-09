@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Algébrica de Autovalores</title>
+    <title>Calculadora Algébrica de Matrizes</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -29,6 +29,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: var(--bg-color); z-index: 100;
             display: flex; justify-content: center; align-items: center; text-align: center;
+            transition: opacity 0.5s ease-out;
         }
         .splash-content { max-width: 600px; padding: 20px; }
         .splash-content h1 { color: var(--accent-color); }
@@ -81,33 +82,30 @@
             font-size: 1.2rem; text-align: center; line-height: 2.5; overflow-x: auto;
             white-space: nowrap; padding: 5px 15px;
         }
-        /* Efeito de degradê para indicar scroll */
         .formula-container::after {
             content: ''; position: absolute; top: 0; right: 0; bottom: 0;
             width: 30px;
             background: linear-gradient(to right, rgba(30, 31, 32, 0), var(--surface-color));
             pointer-events: none;
         }
+        .katex-display { margin: 0.5em 0; }
         .eigen-pair { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
-/* COLE ESTE NOVO BLOCO DE ESTILO */
-#watermark {
-    position: fixed;          /* Fixa o elemento na tela, mesmo com a rolagem */
-    bottom: 10px;             /* Distância de 10 pixels da parte de baixo */
-    right: 15px;              /* Distância de 15 pixels da direita */
-    font-size: 13.5px;          /* Tamanho de fonte pequeno e discreto */
-    color: #2fabff; /* Usa a cor de texto secundária do tema */
-    opacity: 0.5;             /* Deixa o texto semitransparente */
-    z-index: 999;             /* Garante que fique por cima de todos os outros elementos */
-    pointer-events: none;     /* Truque importante: o mouse "atravessa" o texto, não atrapalhando cliques */
-    user-select: none;        /* Impede que o texto da marca d'água seja selecionado */
-} 
+        
+        #watermark {
+            position: fixed;
+            bottom: 10px;
+            right: 15px;
+            font-size: 13.5px;
+            color: #2fabff;
+            opacity: 0.6;
+            z-index: 999;
+            pointer-events: none;
+            user-select: none;
+        }
     </style>
 </head>
-    <div id="watermark">Criado por: Carlos H | Sete</div>
-    <body>
-    </html>
 <body>
-<div> id="splash-screen" class="splash-screen">
+    <div id="splash-screen" class="splash-screen">
         <div class="splash-content">
             <h1>Bem-vindo à Calculadora Algébrica!</h1>
             <p>Esta é uma ferramenta de estudo, criada para auxiliar na visualização dos passos repetitivos do cálculo de autovalores e autovetores.</p>
@@ -118,17 +116,16 @@
     </div>
 
     <div id="calculator-container" class="container hidden">
-        <h1>Calculadora Algébrica de Autovalores</h1>
-        <p>Insira os elementos da matriz para ver o cálculo simbólico passo a passo.</p>
-
+        <h1>Calculadora Algébrica de Matrizes</h1>
+        <p>Insira os elementos da matriz para ver o cálculo passo a passo.</p>
         <div class="control-group">
             <label>Tamanho da Matriz</label>
             <div id="size-selector">
                 <button id="size-btn-2" class="size-btn active">2 × 2</button>
                 <button id="size-btn-3" class="size-btn">3 × 3</button>
+                <button id="size-btn-4" class="size-btn">4 × 4</button>
             </div>
         </div>
-
         <div class="control-group">
             <label>Elementos da Matriz</label>
             <div id="matrix-input-container">
@@ -137,10 +134,9 @@
                 <span id="right-bracket" class="matrix-bracket">)</span>
             </div>
         </div>
-
         <button id="calculate-btn">Calcular</button>
-
         <div id="display-area" class="hidden">
+            <div id="determinant-section" class="result-section hidden"></div>
             <div id="polynomial-section" class="result-section"></div>
             <div id="eigenvalues-section" class="result-section"></div>
             <div id="eigenvectors-section" class="result-section"></div>
@@ -153,11 +149,13 @@
         const calculatorContainer = document.getElementById('calculator-container');
         const sizeBtn2 = document.getElementById('size-btn-2');
         const sizeBtn3 = document.getElementById('size-btn-3');
+        const sizeBtn4 = document.getElementById('size-btn-4');
         const matrixInputGrid = document.getElementById('matrix-input-grid');
         const leftBracket = document.getElementById('left-bracket');
         const rightBracket = document.getElementById('right-bracket');
         const calculateBtn = document.getElementById('calculate-btn');
         const displayArea = document.getElementById('display-area');
+        const determinantSection = document.getElementById('determinant-section');
         const polynomialSection = document.getElementById('polynomial-section');
         const eigenvaluesSection = document.getElementById('eigenvalues-section');
         const eigenvectorsSection = document.getElementById('eigenvectors-section');
@@ -167,75 +165,49 @@
 
         function generateMatrixInputs(size) {
             matrixInputGrid.innerHTML = ''; matrixInputs = [];
-            const bracketSize = size === 2 ? '6rem' : '8rem';
-            leftBracket.style.fontSize = bracketSize;
-            rightBracket.style.fontSize = bracketSize;
+            const bracketSize = size < 4 ? '8rem' : '10rem';
+            leftBracket.style.fontSize = bracketSize; rightBracket.style.fontSize = bracketSize;
             for (let i = 0; i < size; i++) {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'matrix-input-row';
+                const rowDiv = document.createElement('div'); rowDiv.className = 'matrix-input-row';
                 for (let j = 0; j < size; j++) {
                     const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'matrix-input-cell';
+                    input.type = 'text'; input.className = 'matrix-input-cell';
                     input.placeholder = `a${i + 1}${j + 1}`;
-                    rowDiv.appendChild(input);
-                    matrixInputs.push(input);
+                    rowDiv.appendChild(input); matrixInputs.push(input);
                 }
                 matrixInputGrid.appendChild(rowDiv);
             }
         }
-
-        const gcd = (a, b) => b === 0 ? a : gcd(b, Math.abs(a) % b);
-        const gcdAbs = (a, b) => gcd(Math.abs(a), Math.abs(b));
-
-        function simplifyRadical(n) {
-            if (n < 0) return null;
-            if (n === 0) return { coef: 1, rad: 0 };
-            let coef = 1; let rad = n;
-            for (let i = Math.floor(Math.sqrt(n)); i > 1; i--) {
-                if (rad % (i * i) === 0) { coef *= i; rad /= (i * i); }
-            }
-            return { coef, rad };
-        }
-
-        function getDivisors(n) {
-            n = Math.round(Math.abs(n)); if (n === 0) return [0];
-            const divisors = new Set();
-            for (let i = 1; i * i <= n; i++) {
-                if (n % i === 0) { divisors.add(i); divisors.add(-i); divisors.add(n / i); divisors.add(-(n / i)); }
-            }
-            return Array.from(divisors).sort((a,b) => a-b);
-        }
         
-        // CORREÇÃO: Função de simplificação de vetor mais robusta
         function simplifyVector(v) {
             const firstNonZero = v.find(val => Math.abs(val) > 1e-9);
-            if (firstNonZero === undefined) return v; // Vetor nulo
+            if (firstNonZero === undefined) return v;
             return v.map(val => val / firstNonZero);
         }
-        // CÓDIGO NOVO E CORRIGIDO
 
-function formatNumber(num) {
-    const tolerance = 1e-9; // Uma pequena tolerância para erros de ponto flutuante
-    // Se o número for muito próximo de um inteiro...
-    if (Math.abs(num - Math.round(num)) < tolerance) {
-        return Math.round(num).toString(); // ...mostre-o como um inteiro (ex: "3")
-    }
-    // Caso contrário, mostre-o como um decimal com 4 casas.
-    return num.toFixed(4);
-}
-        
+        function formatNumber(num) {
+            const tolerance = 1e-9;
+            if (Math.abs(num - Math.round(num)) < tolerance) { return Math.round(num).toString(); }
+            return num.toFixed(4);
+        }
+
         function renderFormula(element, formula) {
             try { katex.render(formula, element, { throwOnError: false, displayMode: true }); }
             catch (e) { element.textContent = `Erro ao renderizar: ${e.message}`; }
         }
-
+        
         function handleCalculate() {
             const elements = matrixInputs.map(input => parseFloat(input.value.replace(',', '.')));
             if (elements.some(isNaN)) { alert('Erro: Preencha todos os campos com números válidos.'); return; }
-            polynomialSection.innerHTML = ''; eigenvaluesSection.innerHTML = ''; eigenvectorsSection.innerHTML = '';
+            
+            determinantSection.innerHTML = ''; determinantSection.classList.add('hidden');
+            polynomialSection.innerHTML = ''; polynomialSection.classList.remove('hidden');
+            eigenvaluesSection.innerHTML = ''; eigenvaluesSection.classList.remove('hidden');
+            eigenvectorsSection.innerHTML = ''; eigenvectorsSection.classList.remove('hidden');
+
             if (currentSize === 2) { calculate2x2(elements); }
-            else { calculate3x3(elements); }
+            else if (currentSize === 3) { calculate3x3(elements); }
+            else { calculate4x4(elements); }
             displayArea.classList.remove('hidden');
         }
 
@@ -245,52 +217,52 @@ function formatNumber(num) {
             const trSign = -trace < 0 ? '-' : `+`; const trVal = Math.abs(trace);
             const detSign = det < 0 ? '-' : `+`; const detVal = Math.abs(det);
             polynomialSection.innerHTML = `<h3>Polinômio Característico</h3><div class="formula-container" id="poly2x2"></div>`;
-            renderFormula(document.getElementById('poly2x2'), `\\lambda^2 ${trSign} ${trVal}\\lambda ${detSign} ${detVal} = 0`);
+            renderFormula(document.getElementById('poly2x2'), `\\lambda^2 ${trSign} ${formatNumber(trVal)}\\lambda ${detSign} ${formatNumber(detVal)} = 0`);
+            eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3>`;
             const discriminant = trace * trace - 4 * det;
-            if (discriminant < 0) { eigenvaluesSection.innerHTML = `<p>Cálculo resultou em autovalores complexos.</p>`; return; }
-
-            // COLE ESTE NOVO BLOCO DE CÓDIGO NO LUGAR DO ANTIGO:
-eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3>`;
-const discriminantContainer = document.createElement('div');
-discriminantContainer.className = 'formula-container';
-eigenvaluesSection.appendChild(discriminantContainer);
-renderFormula(discriminantContainer, `\\lambda = \\frac{${trace} \\pm \\sqrt{${discriminant}}}{2}`);
-
-if (discriminant < 0) {
-    const realPart = trace / 2; const imagPart = Math.sqrt(-discriminant) / 2;
-    const container = document.createElement('div'); container.className = 'formula-container'; eigenvaluesSection.appendChild(container);
-    renderFormula(container, `\\lambda = ${formatNumber(realPart)} \\pm ${formatNumber(imagPart)}i`);
-    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>Autovetores para autovalores complexos não são calculados.</p>`;
-} else {
-    const sqrtDiscriminant = Math.sqrt(discriminant);
-    const lambda1 = (trace + sqrtDiscriminant) / 2;
-    const lambda2 = (trace - sqrtDiscriminant) / 2;
-
-    if (sqrtDiscriminant % 1 !== 0) { // Mostrar passo da simplificação apenas se não for raiz exata
-        const simpRad = simplifyRadical(discriminant);
-        if (simpRad && (simpRad.coef !== 1 || simpRad.rad !== discriminant)) {
-            const simpContainer = document.createElement('div');
-            simpContainer.className = 'formula-container';
-            eigenvaluesSection.appendChild(simpContainer);
-            renderFormula(simpContainer, `\\lambda = \\frac{${trace} \\pm ${simpRad.coef === 1 ? '' : simpRad.coef}\\sqrt{${simpRad.rad}}}{2}`);
-        }
-    }
-    
-    const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
-    const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
-    renderFormula(container1, `\\lambda_1 = ${formatNumber(lambda1)}`);
-    renderFormula(container2, `\\lambda_2 = ${formatNumber(lambda2)}`);
-    
-    let v1 = [b, lambda1 - a]; if (b === 0 && (lambda1 - a) === 0) v1 = [lambda1 - d, c];
-    let v2 = [b, lambda2 - a]; if (v2[0] === 0 && (lambda2 - a) === 0) v2 = [lambda2 - d, c];
-    const simpV1 = simplifyVector(v1); const simpV2 = simplifyVector(v2);
-    
-    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec1_text"></div><div id="eigvec1_math"></div></div><div class="eigen-pair"><div id="eigvec2_text"></div><div id="eigvec2_math"></div></div>`;
-    renderFormula(document.getElementById('eigvec1_text'), `\\text{Para } \\lambda_1:`);
-    renderFormula(document.getElementById('eigvec1_math'), `v_1 = α \\cdot \\begin{pmatrix} ${formatNumber(simpV1[0])} \\\\ ${formatNumber(simpV1[1])} \\end{pmatrix}`);
-    renderFormula(document.getElementById('eigvec2_text'), `\\text{Para } \\lambda_2:`);
-    renderFormula(document.getElementById('eigvec2_math'), `v_2 = α \\cdot \\begin{pmatrix} ${formatNumber(simpV2[0])} \\\\ ${formatNumber(simpV2[1])} \\end{pmatrix}`);
-     }
+            const discriminantContainer = document.createElement('div');
+            discriminantContainer.className = 'formula-container';
+            eigenvaluesSection.appendChild(discriminantContainer);
+            renderFormula(discriminantContainer, `\\lambda = \\frac{${formatNumber(trace)} \\pm \\sqrt{${formatNumber(discriminant)}}}{2}`);
+            if (discriminant < 0) {
+                const realPart = trace / 2; const imagPart = Math.sqrt(-discriminant) / 2;
+                const container = document.createElement('div'); container.className = 'formula-container'; eigenvaluesSection.appendChild(container);
+                renderFormula(container, `\\lambda = ${formatNumber(realPart)} \\pm ${formatNumber(imagPart)}i`);
+                eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>Autovetores para autovalores complexos não são calculados.</p>`;
+            } else {
+                const sqrtDiscriminant = Math.sqrt(discriminant);
+                const lambda1 = (trace + sqrtDiscriminant) / 2;
+                const lambda2 = (trace - sqrtDiscriminant) / 2;
+                const simplifyRadical = (n) => {
+                    if (n < 0) return null; if (n === 0) return { coef: 1, rad: 0 };
+                    let coef = 1; let rad = n;
+                    for (let i = Math.floor(Math.sqrt(n)); i > 1; i--) {
+                        if (rad % (i * i) === 0) { coef *= i; rad /= (i * i); }
+                    }
+                    return { coef, rad };
+                };
+                if (sqrtDiscriminant % 1 !== 0) {
+                    const simpRad = simplifyRadical(discriminant);
+                    if (simpRad && (simpRad.coef !== 1 || simpRad.rad !== discriminant)) {
+                        const simpContainer = document.createElement('div');
+                        simpContainer.className = 'formula-container';
+                        eigenvaluesSection.appendChild(simpContainer);
+                        renderFormula(simpContainer, `\\lambda = \\frac{${formatNumber(trace)} \\pm ${formatNumber(simpRad.coef) === '1' ? '' : formatNumber(simpRad.coef)}\\sqrt{${simpRad.rad}}}{2}`);
+                    }
+                }
+                const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
+                const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
+                renderFormula(container1, `\\lambda_1 = ${formatNumber(lambda1)}`);
+                renderFormula(container2, `\\lambda_2 = ${formatNumber(lambda2)}`);
+                let v1 = [b, lambda1 - a]; if (b === 0 && (lambda1 - a) === 0) v1 = [lambda1 - d, c];
+                let v2 = [b, lambda2 - a]; if (v2[0] === 0 && (lambda2 - a) === 0) v2 = [lambda2 - d, c];
+                const simpV1 = simplifyVector(v1); const simpV2 = simplifyVector(v2);
+                eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec1_text"></div><div id="eigvec1_math"></div></div><div class="eigen-pair"><div id="eigvec2_text"></div><div id="eigvec2_math"></div></div>`;
+                renderFormula(document.getElementById('eigvec1_text'), `\\text{Para } \\lambda_1:`);
+                renderFormula(document.getElementById('eigvec1_math'), `v_1 = t \\cdot \\begin{pmatrix} ${formatNumber(simpV1[0])} \\\\ ${formatNumber(simpV1[1])} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec2_text'), `\\text{Para } \\lambda_2:`);
+                renderFormula(document.getElementById('eigvec2_math'), `v_2 = t \\cdot \\begin{pmatrix} ${formatNumber(simpV2[0])} \\\\ ${formatNumber(simpV2[1])} \\end{pmatrix}`);
+            }
         }
 
         function calculate3x3(elements) {
@@ -301,77 +273,147 @@ if (discriminant < 0) {
             const trSign = -trace < 0 ? '-' : `+`; const trVal = Math.abs(trace);
             const c2Sign = c2 < 0 ? '-' : `+`; const c2Val = Math.abs(c2);
             const detSign = -det < 0 ? '-' : `+`; const detVal = Math.abs(det);
-            polynomialSection.innerHTML = `<h3>Polinômio Característico</h3><div class="formula-container" id="poly3x3"></div>`;
-            renderFormula(document.getElementById('poly3x3'), `\\lambda^3 ${trSign} ${trVal}\\lambda^2 ${c2Sign} ${c2Val}\\lambda ${detSign} ${detVal} = 0`);
-            
+            polynomialSection.innerHTML = `<div class="formula-container" id="poly3x3"></div>`;
+            renderFormula(document.getElementById('poly3x3'), `\\lambda^3 ${trSign} ${formatNumber(trVal)}\\lambda^2 ${c2Sign} ${formatNumber(c2Val)}\\lambda ${detSign} ${formatNumber(detVal)} = 0`);
+            const getDivisors = (n) => {
+                n = Math.round(Math.abs(n)); if (n === 0) return [0];
+                const divs = new Set();
+                for (let i = 1; i * i <= n; i++) { if (n % i === 0) { divs.add(i); divs.add(-i); divs.add(n / i); divs.add(-(n/i)); } }
+                return Array.from(divs).sort((x,y) => x-y);
+            };
             const divisors = getDivisors(det);
             let lambda1 = null;
             for (const div of divisors) {
                 if (Math.abs(Math.pow(div, 3) - trace * Math.pow(div, 2) + c2 * div - det) < 1e-9) { lambda1 = div; break; }
             }
-            if (lambda1 === null) { eigenvaluesSection.innerHTML = `<p>Não foi encontrada uma raiz inteira para o polinômio.</p>`; return; }
-            
+            if (lambda1 === null) { eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3><p>Não foi encontrada uma raiz inteira para o polinômio.</p>`; eigenvectorsSection.innerHTML = ''; return; }
             const B = -trace + lambda1;
             const C = c2 + lambda1 * B;
-            const discriminant = B * B - 4 * C;
-            if (discriminant < 0) { eigenvaluesSection.innerHTML = `<p>Após encontrar $\\lambda_1 = ${lambda1}$, o cálculo para $\\lambda_2$ e $\\lambda_3$ resultou em raízes complexas.</p>`; return; }
-            
-            const lambda2 = (-B + Math.sqrt(discriminant)) / 2;
-            const lambda3 = (-B - Math.sqrt(discriminant)) / 2;
-            
-            eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3>`;
-            const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
-            const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
-            const container3 = document.createElement('div'); container3.className = 'formula-container'; eigenvaluesSection.appendChild(container3);
-            renderFormula(container1, `\\lambda_1 = ${formatNumber(lambda1)}`);
-            renderFormula(container2, `\\lambda_2 = ${formatNumber(lambda2)}`);
-            renderFormula(container3, `\\lambda_3 = ${formatNumber(lambda3)}`);
-            
-            const tolerance = 1e-9;
-            if (Math.abs(lambda1 - lambda2) < tolerance || Math.abs(lambda1 - lambda3) < tolerance || Math.abs(lambda2 - lambda3) < tolerance) {
-                eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>A matriz possui autovalores repetidos. O cálculo de autovetores para este caso não é suportado nesta versão.</p>`;
+            const discriminant = B * B - 4 * 1 * C;
+            eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3><div class="formula-container" id="eigval3_1"></div>`;
+            renderFormula(document.getElementById('eigval3_1'), `Pelo Teorema das Raízes Racionais, encontramos $\\lambda_1 = ${formatNumber(lambda1)}.$`);
+            eigenvaluesSection.innerHTML += `<p>Usando Briot-Ruffini, o polinômio é reduzido para:</p><div class="formula-container" id="poly3x3_reduced"></div>`;
+            renderFormula(document.getElementById('poly3x3_reduced'), `\\lambda^2 + (${formatNumber(B)})\\lambda + (${formatNumber(C)}) = 0`);
+            if (discriminant < 0) {
+                const realPart = -B / 2; const imagPart = Math.sqrt(-discriminant) / 2;
+                eigenvaluesSection.innerHTML += `<p>As outras raízes são complexas:</p>`;
+                const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
+                renderFormula(container2, `\\lambda_{2,3} = ${formatNumber(realPart)} \\pm ${formatNumber(imagPart)}i`);
+                eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>Cálculo não implementado para autovalores complexos.</p>`
             } else {
-                // Cálculo de autovetores para autovalores distintos
-                const v1 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda1);
-                const v2 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda2);
-                const v3 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda3);
-                eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec31_text"></div><div id="eigvec31_math"></div></div><div class="eigen-pair"><div id="eigvec32_text"></div><div id="eigvec32_math"></div></div><div class="eigen-pair"><div id="eigvec33_text"></div><div id="eigvec33_math"></div></div>`;
-                renderFormula(document.getElementById('eigvec31_text'), `\\text{Para } \\lambda_1:`);
-                renderFormula(document.getElementById('eigvec31_math'), `v_1 = α \\cdot \\begin{pmatrix} ${formatNumber(v1[0])} \\\\ ${formatNumber(v1[1])} \\\\ ${formatNumber(v1[2])} \\end{pmatrix}`);
-                renderFormula(document.getElementById('eigvec32_math'), `v_2 = α \\cdot \\begin{pmatrix} ${formatNumber(v2[0])} \\\\ ${formatNumber(v2[1])} \\\\ ${formatNumber(v2[2])} \\end{pmatrix}`);
-                renderFormula(document.getElementById('eigvec33_math'), `v_3 = α \\cdot \\begin{pmatrix} ${formatNumber(v3[0])} \\\\ ${formatNumber(v3[1])} \\\\ ${formatNumber(v3[2])} \\end{pmatrix}`);
+                const lambda2 = (-B + Math.sqrt(discriminant)) / 2;
+                const lambda3 = (-B - Math.sqrt(discriminant)) / 2;
+                eigenvaluesSection.innerHTML += `<p>As raízes finais são:</p>`
+                const container1 = document.createElement('div'); container1.className = 'formula-container'; eigenvaluesSection.appendChild(container1);
+                renderFormula(container1, `\\lambda_1 = ${formatNumber(lambda1)}`);
+                const container2 = document.createElement('div'); container2.className = 'formula-container'; eigenvaluesSection.appendChild(container2);
+                renderFormula(container2, `\\lambda_2 = ${formatNumber(lambda2)}`);
+                const container3 = document.createElement('div'); container3.className = 'formula-container'; eigenvaluesSection.appendChild(container3);
+                renderFormula(container3, `\\lambda_3 = ${formatNumber(lambda3)}`);
+                const tolerance = 1e-9;
+                if (Math.abs(lambda1 - lambda2) < tolerance || Math.abs(lambda1 - lambda3) < tolerance || Math.abs(lambda2 - lambda3) < tolerance) {
+                    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>A matriz possui autovalores repetidos. O cálculo para este caso não é suportado.</p>`;
+                } else {
+                    const v1 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda1);
+                    const v2 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda2);
+                    const v3 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda3);
+                    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair" id="vec3_1"></div><div class="eigen-pair" id="vec3_2"></div><div class="eigen-pair" id="vec3_3"></div>`;
+                    renderFormula(document.getElementById('vec3_1'), `\\text{Para } \\lambda_1: v_1 = t \\cdot \\begin{pmatrix} ${formatNumber(v1[0])} \\\\ ${formatNumber(v1[1])} \\\\ ${formatNumber(v1[2])} \\end{pmatrix}`);
+                    renderFormula(document.getElementById('vec3_2'), `\\text{Para } \\lambda_2: v_2 = t \\cdot \\begin{pmatrix} ${formatNumber(v2[0])} \\\\ ${formatNumber(v2[1])} \\\\ ${formatNumber(v2[2])} \\end{pmatrix}`);
+                    renderFormula(document.getElementById('vec3_3'), `\\text{Para } \\lambda_3: v_3 = t \\cdot \\begin{pmatrix} ${formatNumber(v3[0])} \\\\ ${formatNumber(v3[1])} \\\\ ${formatNumber(v3[2])} \\end{pmatrix}`);
+                }
             }
         }
         
         function calculate3x3Eigenvector(a,b,c, d,e,f, g,h,i, lambda) {
             const B = [ [a-lambda, b, c], [d, e-lambda, f], [g, h, i-lambda] ];
             const r1 = B[0], r2 = B[1], r3 = B[2];
-            // Produto Vetorial de duas linhas para encontrar o vetor do espaço nulo
-            let crossProd = [ r1[1]*r2[2] - r1[2]*r2[1], r1[2]*r2[0] - r1[0]*r2[2], r1[0]*r2[1] - r1[1]*r2[0] ];
-            // Se as duas primeiras linhas forem paralelas, usar outras duas
-            if(crossProd.every(val => Math.abs(val) < 1e-9)) {
-                crossProd = [ r1[1]*r3[2] - r1[2]*r3[1], r1[2]*r3[0] - r1[0]*r3[2], r1[0]*r3[1] - r1[1]*r3[0] ];
-            }
-            return simplifyVector(crossProd);
+            const cross = (u, v) => [ u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0] ];
+            const isZero = (v) => v.every(val => Math.abs(val) < 1e-9);
+            let eigenvector = cross(r1, r2);
+            if (isZero(eigenvector)) { eigenvector = cross(r1, r3); }
+            if (isZero(eigenvector)) { eigenvector = cross(r2, r3); }
+            return simplifyVector(eigenvector);
         }
+        
+       // COLE ESTA NOVA E CORRIGIDA VERSÃO DA FUNÇÃO calculate4x4
+function calculate4x4(elements) {
+    polynomialSection.innerHTML = `<h3>Polinômio Característico (4x4)</h3>`;
+    eigenvaluesSection.innerHTML = `<h3>Autovalores (λ)</h3><p>Resolva o polinômio característico acima para encontrar os autovalores.</p>`;
+    eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><p>Não suportado para matrizes 4x4.</p>`;
 
+    // Cria uma representação 2D da matriz para facilitar os cálculos
+    const M = [
+        elements.slice(0, 4),
+        elements.slice(4, 8),
+        elements.slice(8, 12),
+        elements.slice(12, 16)
+    ];
+
+    // Função auxiliar para pegar uma submatriz 3x3 (removendo uma linha e coluna)
+    const getSubmatrix = (matrix, rowToRemove, colToRemove) => 
+        matrix
+            .filter((_, rowIndex) => rowIndex !== rowToRemove)
+            .map(row => row.filter((_, colIndex) => colIndex !== colToRemove));
+
+    // Função auxiliar para calcular o determinante de uma matriz 3x3 (dada como array 2D)
+    const det3x3 = (m) => 
+        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+        m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+        m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+
+    // Coeficientes do Polinômio: λ⁴ - tr(A)λ³ + C₂λ² - C₃λ + det(A) = 0
+    const trace = M[0][0] + M[1][1] + M[2][2] + M[3][3];
+
+    const c2 = 
+        (M[0][0]*M[1][1] - M[0][1]*M[1][0]) + (M[0][0]*M[2][2] - M[0][2]*M[2][0]) + (M[0][0]*M[3][3] - M[0][3]*M[3][0]) +
+        (M[1][1]*M[2][2] - M[1][2]*M[2][1]) + (M[1][1]*M[3][3] - M[1][3]*M[3][1]) + (M[2][2]*M[3][3] - M[2][3]*M[3][2]);
+
+    const c3 = 
+        det3x3(getSubmatrix(M, 3, 3)) + // Minor de A44
+        det3x3(getSubmatrix(M, 2, 2)) + // Minor de A33
+        det3x3(getSubmatrix(M, 1, 1)) + // Minor de A22
+        det3x3(getSubmatrix(M, 0, 0));  // Minor de A11
+
+    const det = 
+        M[0][0] * det3x3(getSubmatrix(M, 0, 0)) -
+        M[0][1] * det3x3(getSubmatrix(M, 0, 1)) +
+        M[0][2] * det3x3(getSubmatrix(M, 0, 2)) -
+        M[0][3] * det3x3(getSubmatrix(M, 0, 3));
+    
+    const trSign = -trace < 0 ? '-' : `+`; const trVal = Math.abs(trace);
+    const c2Sign = c2 >= 0 ? '+' : `-`; const c2Val = Math.abs(c2);
+    const c3Sign = -c3 < 0 ? '-' : `+`; const c3Val = Math.abs(c3);
+    const detSign = det >= 0 ? '+' : `-`; const detVal = Math.abs(det);
+    
+    const polyContainer = document.createElement('div');
+    polyContainer.className = 'formula-container';
+    polyContainer.id = 'poly4x4';
+    polynomialSection.appendChild(polyContainer);
+    renderFormula(polyContainer, `\\lambda^4 ${trSign} ${formatNumber(trVal)}\\lambda^3 ${c2Sign} ${formatNumber(c2Val)}\\lambda^2 ${c3Sign} ${formatNumber(c3Val)}\\lambda ${detSign} ${formatNumber(detVal)} = 0`);
+}
+        // --- SETUP INICIAL ---
         function handleSizeChange(newSize) {
             currentSize = newSize;
             document.querySelectorAll('#size-selector button').forEach(btn => btn.classList.remove('active'));
             if (newSize === 2) sizeBtn2.classList.add('active');
             else if (newSize === 3) sizeBtn3.classList.add('active');
+            else if (newSize === 4) sizeBtn4.classList.add('active');
             generateMatrixInputs(newSize);
             displayArea.classList.add('hidden');
         }
 
         startBtn.addEventListener('click', () => {
-            splashScreen.style.display = 'none';
-            calculatorContainer.classList.remove('hidden');
+            splashScreen.style.opacity = '0';
+            setTimeout(() => { splashScreen.style.display = 'none'; calculatorContainer.classList.remove('hidden'); }, 500);
         });
         sizeBtn2.addEventListener('click', () => handleSizeChange(2));
         sizeBtn3.addEventListener('click', () => handleSizeChange(3));
+        sizeBtn4.addEventListener('click', () => handleSizeChange(4));
         calculateBtn.addEventListener('click', handleCalculate);
         generateMatrixInputs(currentSize);
     </script>
+
+    <div id="watermark">Criado por: Carlos H | Sete</div>
 </body>
 </html>
