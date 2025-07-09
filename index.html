@@ -89,10 +89,25 @@
             pointer-events: none;
         }
         .eigen-pair { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
+/* COLE ESTE NOVO BLOCO DE ESTILO */
+#watermark {
+    position: fixed;          /* Fixa o elemento na tela, mesmo com a rolagem */
+    bottom: 10px;             /* Distância de 10 pixels da parte de baixo */
+    right: 15px;              /* Distância de 15 pixels da direita */
+    font-size: 13.5px;          /* Tamanho de fonte pequeno e discreto */
+    color: #2fabff; /* Usa a cor de texto secundária do tema */
+    opacity: 0.5;             /* Deixa o texto semitransparente */
+    z-index: 999;             /* Garante que fique por cima de todos os outros elementos */
+    pointer-events: none;     /* Truque importante: o mouse "atravessa" o texto, não atrapalhando cliques */
+    user-select: none;        /* Impede que o texto da marca d'água seja selecionado */
+} 
     </style>
 </head>
+    <div id="watermark">Criado por: Carlos H | Sete</div>
+    <body>
+    </html>
 <body>
-    <div id="splash-screen" class="splash-screen">
+<div> id="splash-screen" class="splash-screen">
         <div class="splash-content">
             <h1>Bem-vindo à Calculadora Algébrica!</h1>
             <p>Esta é uma ferramenta de estudo, criada para auxiliar na visualização dos passos repetitivos do cálculo de autovalores e autovetores.</p>
