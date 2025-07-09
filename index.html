@@ -272,9 +272,9 @@ if (discriminant < 0) {
     
     eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec1_text"></div><div id="eigvec1_math"></div></div><div class="eigen-pair"><div id="eigvec2_text"></div><div id="eigvec2_math"></div></div>`;
     renderFormula(document.getElementById('eigvec1_text'), `\\text{Para } \\lambda_1:`);
-    renderFormula(document.getElementById('eigvec1_math'), `v_1 = t \\cdot \\begin{pmatrix} ${formatNumber(simpV1[0])} \\\\ ${formatNumber(simpV1[1])} \\end{pmatrix}`);
+    renderFormula(document.getElementById('eigvec1_math'), `v_1 = α \\cdot \\begin{pmatrix} ${formatNumber(simpV1[0])} \\\\ ${formatNumber(simpV1[1])} \\end{pmatrix}`);
     renderFormula(document.getElementById('eigvec2_text'), `\\text{Para } \\lambda_2:`);
-    renderFormula(document.getElementById('eigvec2_math'), `v_2 = t \\cdot \\begin{pmatrix} ${formatNumber(simpV2[0])} \\\\ ${formatNumber(simpV2[1])} \\end{pmatrix}`);
+    renderFormula(document.getElementById('eigvec2_math'), `v_2 = α \\cdot \\begin{pmatrix} ${formatNumber(simpV2[0])} \\\\ ${formatNumber(simpV2[1])} \\end{pmatrix}`);
      }
         }
 
@@ -322,9 +322,9 @@ if (discriminant < 0) {
                 const v3 = calculate3x3Eigenvector(a,b,c,d,e,f,g,h,i, lambda3);
                 eigenvectorsSection.innerHTML = `<h3>Autovetores (v)</h3><div class="eigen-pair"><div id="eigvec31_text"></div><div id="eigvec31_math"></div></div><div class="eigen-pair"><div id="eigvec32_text"></div><div id="eigvec32_math"></div></div><div class="eigen-pair"><div id="eigvec33_text"></div><div id="eigvec33_math"></div></div>`;
                 renderFormula(document.getElementById('eigvec31_text'), `\\text{Para } \\lambda_1:`);
-                renderFormula(document.getElementById('eigvec31_math'), `v_1 = t \\cdot \\begin{pmatrix} ${formatNumber(v1[0])} \\\\ ${formatNumber(v1[1])} \\\\ ${formatNumber(v1[2])} \\end{pmatrix}`);
-                renderFormula(document.getElementById('eigvec32_math'), `v_2 = t \\cdot \\begin{pmatrix} ${formatNumber(v2[0])} \\\\ ${formatNumber(v2[1])} \\\\ ${formatNumber(v2[2])} \\end{pmatrix}`);
-                renderFormula(document.getElementById('eigvec33_math'), `v_3 = t \\cdot \\begin{pmatrix} ${formatNumber(v3[0])} \\\\ ${formatNumber(v3[1])} \\\\ ${formatNumber(v3[2])} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec31_math'), `v_1 = α \\cdot \\begin{pmatrix} ${formatNumber(v1[0])} \\\\ ${formatNumber(v1[1])} \\\\ ${formatNumber(v1[2])} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec32_math'), `v_2 = α \\cdot \\begin{pmatrix} ${formatNumber(v2[0])} \\\\ ${formatNumber(v2[1])} \\\\ ${formatNumber(v2[2])} \\end{pmatrix}`);
+                renderFormula(document.getElementById('eigvec33_math'), `v_3 = α \\cdot \\begin{pmatrix} ${formatNumber(v3[0])} \\\\ ${formatNumber(v3[1])} \\\\ ${formatNumber(v3[2])} \\end{pmatrix}`);
             }
         }
         
